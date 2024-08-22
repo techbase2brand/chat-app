@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,11 @@ import {
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Video from 'react-native-video';
 import Header from '../components/Header';
-import { useFocusEffect } from '@react-navigation/native';
+import {useFocusEffect} from '@react-navigation/native';
 import storage from '@react-native-firebase/storage';
 import Geolocation from '@react-native-community/geolocation';
 import Contacts from 'react-native-contacts';
@@ -31,8 +31,8 @@ const getChatId = (userId1, userId2) => {
   return `${sortedIds[0]}_${sortedIds[1]}`;
 };
 
-const ChatScreen = ({ route }) => {
-  const { user } = route.params;
+const ChatScreen = ({route}) => {
+  const {user} = route.params;
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [typing, setTyping] = useState(false);
@@ -77,12 +77,12 @@ const ChatScreen = ({ route }) => {
     };
   }, [user.uid]);
 
-  const sendMessage = async (messageType, content = '') => {
+  const sendMessage = async (messageType, content = '', fileName = '') => {
     setNewMessage('');
     if (newMessage.trim() === '' && messageType === 'text') return;
 
     const chatId = getChatId(auth().currentUser.uid, user.uid);
-    const { uid, displayName } = auth().currentUser;
+    const {uid, displayName} = auth().currentUser;
     const createdAt = firestore.FieldValue.serverTimestamp();
 
     await firestore()
@@ -96,6 +96,7 @@ const ChatScreen = ({ route }) => {
         senderName: displayName,
         createdAt,
         type: messageType,
+        fileName: fileName || '',
       });
 
     // setNewMessage('');
@@ -128,7 +129,7 @@ const ChatScreen = ({ route }) => {
       } else if (response.error) {
         console.log('ImagePicker Error: ', response.error);
       } else {
-        const source = { uri: response.assets[0].uri };
+        const source = {uri: response.assets[0].uri};
         setLoading(true);
         await uploadMedia(source.uri, mediaType);
         setLoading(false);
@@ -146,7 +147,7 @@ const ChatScreen = ({ route }) => {
       } else if (response.error) {
         console.log('ImagePicker Error: ', response.error);
       } else {
-        const source = { uri: response.assets[0].uri };
+        const source = {uri: response.assets[0].uri};
         setLoading(true);
         await uploadMedia(source.uri, mediaType);
         setLoading(false);
@@ -156,7 +157,7 @@ const ChatScreen = ({ route }) => {
 
   const uploadMedia = async (uri, type) => {
     const chatId = getChatId(auth().currentUser.uid, user.uid);
-    const { uid, displayName } = auth().currentUser;
+    const {uid, displayName} = auth().currentUser;
     const createdAt = firestore.FieldValue.serverTimestamp();
 
     const filename = uri.substring(uri.lastIndexOf('/') + 1);
@@ -178,8 +179,8 @@ const ChatScreen = ({ route }) => {
       });
   };
 
-  const renderChatMessage = ({ item }) => {
-    const { text, mediaUrl, type, senderId } = item;
+  const renderChatMessage = ({item}) => {
+    const {text, mediaUrl, type, senderId, fileName} = item;
     const isCurrentUser = senderId === auth().currentUser.uid;
     // console.log("rednderitem", mediaUrl)
     return (
@@ -191,9 +192,9 @@ const ChatScreen = ({ route }) => {
         {type === 'text' ? (
           <Text style={styles.messageText}>{text}</Text>
         ) : type === 'photo' ? (
-          <Image source={{ uri: mediaUrl }} style={styles.media} />
+          <Image source={{uri: mediaUrl}} style={styles.media} />
         ) : type === 'video' ? (
-          <Video source={{ uri: mediaUrl }} style={styles.media} controls />
+          <Video source={{uri: mediaUrl}} style={styles.media} controls />
         ) : type === 'location' ? (
           <Text style={styles.locationText} onPress={() => openMap(mediaUrl)}>
             {`Location: ${mediaUrl}`}
@@ -202,20 +203,22 @@ const ChatScreen = ({ route }) => {
           <Text style={styles.contactText}>
             {mediaUrl
               ? mediaUrl
-                .split(',')
-                .map(item => item.replace(':', ': '))
-                .join('\n')
+                  .split(',')
+                  .map(item => item.replace(':', ': '))
+                  .join('\n')
               : 'No contact information available'}
           </Text>
         ) : type === 'file' ? (
           <TouchableOpacity onPress={() => Linking.openURL(mediaUrl)}>
-            <Image
+            {/* <Image
               source={require('../assets/images/file.png')}
               style={styles.fileIcon}
-            />
-            <Text style={styles.fileText}>{`File: ${mediaUrl
+            /> */}
+            {/* <Text style={styles.fileText}>{`File: ${mediaUrl
               .split('/')
-              .pop()}`}</Text>
+              .pop()}`}</Text> */}
+            <Image source={getFileIcon(fileName)} style={styles.fileIcon} />
+            <Text style={styles.fileText}>{`${fileName}`}</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -231,7 +234,7 @@ const ChatScreen = ({ route }) => {
     setLoading(true);
     Geolocation.getCurrentPosition(
       async position => {
-        const { latitude, longitude } = position.coords;
+        const {latitude, longitude} = position.coords;
         const locationUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
         await sendMessage('location', locationUrl);
         setLoading(false);
@@ -240,7 +243,7 @@ const ChatScreen = ({ route }) => {
         console.log(error);
         setLoading(false);
       },
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
+      {enableHighAccuracy: false, timeout: 15000, maximumAge: 10000},
     );
   };
 
@@ -291,8 +294,8 @@ const ChatScreen = ({ route }) => {
     return name ? name.charAt(0).toUpperCase() : '';
   };
 
-  const FallbackAvatar = ({ name }) => (
-    <View style={[styles.profilePicture, { borderColor: 'black' }]}>
+  const FallbackAvatar = ({name}) => (
+    <View style={[styles.profilePicture, {borderColor: 'black'}]}>
       <Text style={styles.fallbackAvatarText}>{getInitials(name)}</Text>
     </View>
   );
@@ -304,7 +307,7 @@ const ChatScreen = ({ route }) => {
       });
       // console.log("Picked file:", res);
 
-      const { uri, name } = res;
+      const {uri, name} = res;
 
       // Define a temporary path for the file
       const tempFilePath = `${RNFS.TemporaryDirectoryPath}/${name}`;
@@ -330,9 +333,9 @@ const ChatScreen = ({ route }) => {
         // console.log("File download URL:", downloadURL);
 
         // Send message with the file URL
-        await sendMessage('file', downloadURL);
+        await sendMessage('file', downloadURL, name);
       } catch (uploadError) {
-        console.error("Upload error:", uploadError);
+        console.error('Upload error:', uploadError);
       } finally {
         setLoading(false);
       }
@@ -341,7 +344,7 @@ const ChatScreen = ({ route }) => {
       if (DocumentPicker.isCancel(err)) {
         console.log('Canceled from document picker');
       } else {
-        console.error("File picking error:", err);
+        console.error('File picking error:', err);
       }
     }
   };
@@ -362,9 +365,32 @@ const ChatScreen = ({ route }) => {
     }
   };
 
+  const getFileIcon = fileName => {
+    const extension = fileName?.split('.').pop().toLowerCase();
+
+    switch (extension) {
+      case 'pdf':
+        return require('../assets/images/pdf.png');
+      case 'doc':
+      case 'docx':
+        return require('../assets/images/google-docs.png');
+      case 'mp4':
+      case 'mp3':
+        return require('../assets/images/play.png');
+      case 'xlsx':
+      case 'xls':
+        return require('../assets/images/xl.png');
+      case 'vcf':
+        return require('../assets/images/vcf.png');
+      case 'pptx':
+        return require('../assets/images/ppt.png');
+      default:
+        return require('../assets/images/file.png');
+    }
+  };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{flex: 1}}>
       <Header title={name} back={true} />
       {loading && (
         <View style={styles.loadingContainer}>
@@ -427,14 +453,13 @@ const ChatScreen = ({ route }) => {
           <TouchableOpacity onPress={shareContact}>
             <Icon name="contacts" size={28} color="#42A5F5" />
           </TouchableOpacity>
-
         </View>
         {showContactPicker && (
           <View style={styles.contactPicker}>
             <FlatList
               data={contacts}
               keyExtractor={item => item.recordID}
-              renderItem={({ item }) => (
+              renderItem={({item}) => (
                 <TouchableOpacity
                   style={styles.contactItem}
                   onPress={() => handleSelectContact(item)}>
@@ -592,12 +617,12 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   fileIcon: {
-    width: 250,
-    height: 130,
-    alignItems: "center",
-    justifyContent: "center",
-    resizeMode:"cover",
-    marginHorizontal:10
+    width: 150,
+    height: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    resizeMode: 'contain',
+    marginHorizontal: 10,
   },
   fileText: {
     marginTop: 10,
